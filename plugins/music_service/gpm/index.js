@@ -1,22 +1,29 @@
 'use strict';
 
 var libQ = require('kew');
+var libNet = require('net');
+var fs = require('fs-extra');
+var config = new (require('v-conf'))();
 
 module.exports = ControllerGPM;
 function ControllerGPM(context) {
     var self = this;
 
     this.context = context;
-    this.commandRouter = this.context.commandRouter;
+    this.commandRouter = this.context.coreCommand;
     this.logger = this.context.logger;
     this.configManager = this.context.configManager;
 }
 
 ControllerGPM.prototype.onVolumioStart = function() {
-    this.config = new (require('v-conf'))();
+    var self = this;
 
-    var configFile = this.commandRouter.pluginManager.getConfigurationFile(this.context, 'config.json');
+    var configFile = self.commandRouter.pluginManager.getConfigurationFile(this.context, 'config.json');
+
+    this.config = new (require('v-conf'))();
     this.config.loadFile(configFile);
+
+    self.commandRouter.pushConsoleMessage('onVolumioStart');
 };
 
 ControllerGPM.prototype.onStart = function() {
@@ -105,6 +112,16 @@ ControllerGPM.prototype.explodeUri = function(uri) {
     var defer = libQ.defer();
 
     var response;
+
+    return defer.promise;
+};
+
+ControllerGPM.prototype.saveAccount = function(data) {
+    var self = this;
+
+    var defer = libQ.defer();
+
+    //TODO set config
 
     return defer.promise;
 };
