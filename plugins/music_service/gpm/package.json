@@ -1,0 +1,20 @@
+{
+  "name": "gpm",
+  "version": "1.0.0",
+  "description": "Google Play Music plugin for Volumio2",
+  "main": "index.js",
+  "author": {
+    "name": "vanita5",
+    "email": "mail@vanit.as"
+  },
+  "license": "MIT",
+  "volumio_info": {
+    "prettyName": "Google Play Music",
+    "icon": "fa-google",
+    "plugin_type": "music_service"
+  },
+  "dependencies": {
+    "kew": "^0.7.0",
+    "v-conf": "^1.3.0"
+  }
+}

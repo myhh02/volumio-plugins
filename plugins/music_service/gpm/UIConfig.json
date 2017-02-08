@@ -1,0 +1,40 @@
+{
+  "page": {
+    "label": "TRANSLATE.GPM_CONFIGURATION"
+  },
+  "sections": [
+    {
+      "id": "section_account",
+      "element": "section",
+      "label": "TRANSLATE.GPM_ACCOUNT",
+      "icon": "fa-plug",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "music_service/gpm",
+        "method": "saveAccount"
+      },
+      "saveButton": {
+        "label": "TRANSLATE.GPM_SAVE",
+        "data": []
+      },
+      "content": [
+        {
+          "id": "username",
+          "type": "text",
+          "element": "input",
+          "doc": "Google Login - Username or Password",
+          "label": "TRANSLATE.GPM_USERNAME",
+          "value": ""
+        },
+        {
+          "id": "password",
+          "type": "password",
+          "element": "input",
+          "doc": "Google Login Password",
+          "label": "TRANSLATE.GPM_PASSWORD",
+          "value": ""
+        }
+      ]
+    }
+  ]
+}
