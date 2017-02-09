@@ -191,6 +191,8 @@ ControllerGPM.prototype.handleBrowseUri = function(uri) {
         else if (uri.startsWith('gpm/playlists')) {
             if (uri === 'gpm/playlists') {
                 response = self.listPlaylists();
+            } else {
+                response = self.listPlaylist(uri);
             }
         }
     }
@@ -297,8 +299,6 @@ ControllerGPM.prototype.listPlaylists = function() {
         .then(function(playlists) {
             var listItems = [];
 
-            console.log(playlists);
-
             for (var i in playlists) {
                 listItems.push({
                     service: self.servicename,
@@ -330,6 +330,53 @@ ControllerGPM.prototype.listPlaylists = function() {
         })
         .fail(function() {
             defer.fail(new Error("Error loading playlists"));
+        });
+
+    return defer.promise;
+};
+
+ControllerGPM.prototype.listPlaylist = function(uri) {
+    var self = this;
+
+    var defer = libQ.defer();
+
+    var id = uri.split('/')[2];
+
+    this.gpmApi.getPlaylist(id)
+        .then(function(tracks) {
+            var listItems = [];
+
+            for (var i in tracks) {
+                listItems.push({
+                    service: self.servicename,
+                    type: 'song',
+                    title: tracks[i].title,
+                    artist: tracks[i].artist,
+                    icon: 'fa fa-music',
+                    uri: 'gpm/song/' + tracks[i].file
+                });
+            }
+
+            var response = {
+                navigation: {
+                    prev: {
+                        uri: 'gpm/playlists'
+                    },
+                    "lists": [
+                        {
+                            "availableListViews": [
+                                "list"
+                            ],
+                            "items": listItems
+                        }
+                    ]
+                }
+            };
+
+            defer.resolve(response);
+        })
+        .fail(function() {
+            defer.fail(new Error("Error loading song"));
         });
 
     return defer.promise;

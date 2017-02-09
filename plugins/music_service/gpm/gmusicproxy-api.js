@@ -74,14 +74,14 @@ GMusicProxyAPI.prototype.getAllStations = function() {
 
 GMusicProxyAPI.prototype.getAllPlaylists = function() {
     var url = this.baseUrl + '/get_all_playlists';
-    return this.request(url, this.parsePlaylists);
+    return this.request(url, this.parse);
 };
 
 GMusicProxyAPI.prototype.getPlaylist = function(id, shuffle) {
     var url = this.baseUrl + '/get_playlist';
     url += '?id=' + encodeURIComponent(id);
     url += '&shuffle=' + (shuffle ? 'yes' : 'no');
-    return this.request(url);
+    return this.request(url, this.parse);
 };
 
 GMusicProxyAPI.prototype.getAlbum = function(id) {
@@ -114,7 +114,7 @@ GMusicProxyAPI.prototype.getDiscographyArtist = function(id) {
 
 
 
-GMusicProxyAPI.prototype.parsePlaylists = function(data) {
+GMusicProxyAPI.prototype.parse = function(data) {
     if (!data || data.length === 0) return data;
     var playlists = m3uParser.parse(data, { encoding: 'utf8 '});
     for (var i in playlists) {
@@ -130,8 +130,8 @@ GMusicProxyAPI.prototype.parsePlaylists = function(data) {
     }
     return playlists;
 };
-
-// new GMusicProxyAPI().getAllPlaylists()
+//
+// new GMusicProxyAPI().getPlaylist('7913b436-a176-4ac5-ac26-0d01253ac6e7')
 //     .then(function(res) {
 //         console.log(res);
 //     })
