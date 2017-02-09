@@ -4,6 +4,7 @@ var libQ = require('kew');
 var libNet = require('net');
 var fs = require('fs-extra');
 var config = new (require('v-conf'))();
+var exec = require('child_process').exec;
 
 module.exports = ControllerGPM;
 function ControllerGPM(context) {
@@ -33,9 +34,12 @@ ControllerGPM.prototype.onStart = function() {
 
     var defer = libQ.defer();
 
-    //TODO
+    self.startGMusicProxyDaemon()
+        .fail(function(e) {
+            defer.reject(new Error(e));
+        });
 
-    // this.commandRouter.sharedVars.registerCallback('alsa.outputdevice', this.rebuildGPMAndRestartDaemon.bind(this));
+    self.commandRouter.sharedVars.registerCallback('alsa.outputdevice', self.rebuildGMusicProxyAndRestartDaemon.bind(this));
 
     return defer.promise;
 };
@@ -82,6 +86,43 @@ ControllerGPM.prototype.onRestart = function() {
     self.commandRouter.pushConsoleMessage('[gpm] onRestart');
 };
 
+ControllerGPM.prototype.startGMusicProxyDaemon = function() {
+    var self = this;
+
+    var defer = libQ.defer();
+
+    exec('/usr/local/bin/GMusicProxy --daemon', function(error, stdout, stderr) {
+        if (error !== null && error.length > 0) {
+            self.commandRouter.pushConsoleMessage('Error while starting GMusicProxy daemon: ' + error);
+            defer.reject();
+        }
+        self.commandRouter.pushConsoleMessage('--- Started GMusicProxy daemon:' + stdout);
+
+        defer.resolve();
+    });
+
+    return defer.promise;
+};
+
+ControllerGPM.prototype.rebuildGMusicProxyAndRestartDaemon = function() {
+    var self = this;
+
+    var defer = libQ.defer();
+
+    self.createGmusicproxyFile()
+        .then(function(e) {
+            var edefer = libQ.defer();
+            exec('killall GMusicProxy', function(error, stdout, stderr) {
+                self.commandRouter.pushConsoleMessage('--- Stopped GMusicProxy daemon\n' + (stdout ? stdout : stderr));
+                if (error) self.commandRouter.pushConsoleMessage('--- Error while stopping GMusicProxy daemon - ' + error);
+                edefer.resolve();
+            });
+        })
+        .then(self.startGMusicProxyDaemon.bind(self));
+
+    return defer.promise;
+};
+
 ControllerGPM.prototype.addToBrowseSources = function() {
     this.commandRouter.volumioAddToBrowseSources({
         name: "Google Play Music",
@@ -123,6 +164,41 @@ ControllerGPM.prototype.saveAccount = function(data) {
 
     self.config.set('username', data['username']);
     self.config.set('password', data['password']);
+
+    self.rebuildGMusicProxyAndRestartDaemon()
+        .then(function(e) {
+            self.commandRouter.pushToastMessage('success', "Configuration update", 'The configuration has been successfully updated');
+            defer.resolve();
+        })
+        .fail(function(e) {
+            defer.reject(new Error());
+        });
+
+    return defer.promise;
+};
+
+ControllerGPM.prototype.createGmusicproxyFile = function() {
+    var self = this;
+
+    var defer = libQ.defer();
+
+    try {
+        fs.readFile(__dirname + '/gmusicproxy.cfg.tmpl', 'utf8', function(err, data) {
+            if (err) {
+                defer.reject(new Error(err));
+                return console.log(err);
+            }
+            data = data.replace('${username}', self.config.get('username'))
+                .replace('${password}', self.config.get('password'));
+
+            fs.writeFile('/home/volumio/.config/gmusicproxy.cfg', data, 'utf8', function(err) {
+                if (err) defer.reject(new Error(err));
+                else defer.resolve();
+            });
+        });
+    } catch (err) {
+        self.logger.warn("[gpm] Error reading gmusicproxy.cfg.tmpl - " + err);
+    }
 
     return defer.promise;
 };
