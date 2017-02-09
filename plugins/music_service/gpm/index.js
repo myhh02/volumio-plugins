@@ -397,7 +397,7 @@ ControllerGPM.prototype.getTrack = function(id) {
             // FIXME there's no way to get song information or uri from GMusicProxy by track id... :(
             defer.resolve([
                 {
-                    uri: 'http://10.5.102.23:9999/get_song?id=Tnhlewryt4ts77aszka7winnu74',
+                    uri: 'http://localhost:9999/get_song?id=Tnhlewryt4ts77aszka7winnu74',
                     service: self.servicename,
                     artist: 'artist',
                     album: 'album',
