@@ -95,8 +95,24 @@ ControllerGPM.prototype.startGMusicProxyDaemon = function() {
         if (error !== null && error.length > 0) {
             self.commandRouter.pushConsoleMessage('Error while starting GMusicProxy daemon: ' + error);
             defer.reject();
+        } else {
+            self.commandRouter.pushConsoleMessage('--- Started GMusicProxy daemon:' + stdout);
+            defer.resolve();
         }
-        self.commandRouter.pushConsoleMessage('--- Started GMusicProxy daemon:' + stdout);
+    });
+
+    return defer.promise;
+};
+
+ControllerGPM.prototype.stopGMusicProxyDaemon = function() {
+    var self = this;
+
+    var defer = libQ.defer();
+
+    exec('killall GMusicProxy', function(error, stdout, stderr) {
+        self.commandRouter.pushConsoleMessage('--- Stopped GMusicProxy daemon\n' + (stdout ? stdout : stderr));
+
+        if (error) self.commandRouter.pushConsoleMessage('--- Error while stopping GMusicProxy daemon - ' + error);
 
         defer.resolve();
     });
@@ -110,14 +126,7 @@ ControllerGPM.prototype.rebuildGMusicProxyAndRestartDaemon = function() {
     var defer = libQ.defer();
 
     self.createGmusicproxyFile()
-        .then(function(e) {
-            var edefer = libQ.defer();
-            exec('killall GMusicProxy', function(error, stdout, stderr) {
-                self.commandRouter.pushConsoleMessage('--- Stopped GMusicProxy daemon\n' + (stdout ? stdout : stderr));
-                if (error) self.commandRouter.pushConsoleMessage('--- Error while stopping GMusicProxy daemon - ' + error);
-                edefer.resolve();
-            });
-        })
+        .then(self.stopGMusicProxyDaemon.bind(self))
         .then(self.startGMusicProxyDaemon.bind(self));
 
     return defer.promise;
