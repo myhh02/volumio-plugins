@@ -4,8 +4,8 @@ var libQ = require('kew');
 var fs = require('fs-extra');
 var config = new (require('v-conf'))();
 var exec = require('child_process').exec;
+var GMusicProxyAPI = require('./gmusicproxy-api');
 
-module.exports = ControllerGPM;
 function ControllerGPM(context) {
     var self = this;
 
@@ -13,6 +13,8 @@ function ControllerGPM(context) {
     this.commandRouter = this.context.coreCommand;
     this.logger = this.context.logger;
     this.configManager = this.context.configManager;
+    this.servicename = 'gpm';
+    this.gpmApi = new GMusicProxyAPI();
 }
 
 ControllerGPM.prototype.onVolumioStart = function() {
@@ -155,11 +157,42 @@ ControllerGPM.prototype.addToBrowseSources = function() {
 ControllerGPM.prototype.handleBrowseUri = function(uri) {
     var self = this;
 
-    self.commandRouter.pushConsoleMessage('[gpm] handleBrowserUri: ' + uri);
+    self.commandRouter.pushConsoleMessage('[gpm] handleBrowserUri: "' + uri + '"');
 
     var response;
     if (uri.startsWith('gpm')) {
-        //TODO
+        if (uri === 'gpm') {
+            response = libQ.resolve({
+                navigation: {
+                    lists: [
+                        {
+                            "availableListView": [
+                                "list"
+                            ],
+                            "items": [
+                                {
+                                    service: self.servicename,
+                                    type: 'gpm-category',
+                                    title: 'My Playlists',
+                                    artist: '',
+                                    album: '',
+                                    icon: 'fa fa-folder-open-o',
+                                    uri: 'gpm/playlists'
+                                }
+                            ]
+                        }
+                    ],
+                    "prev": {
+                        uri: 'gpm'
+                    }
+                }
+            });
+        }
+        else if (uri.startsWith('gpm/playlists')) {
+            if (uri === 'gpm/playlists') {
+                response = self.listPlaylists();
+            }
+        }
     }
 
     return response;
@@ -222,3 +255,84 @@ ControllerGPM.prototype.createGmusicproxyFile = function() {
 
     return defer.promise;
 };
+
+ControllerGPM.prototype.clearAddPlayTrack = function(track) {
+    return this.mpdPlugin.clearAddPlayTrack(track);
+};
+
+ControllerGPM.prototype.stop = function() {
+    return this.mpdPlugin.stop();
+};
+
+ControllerGPM.prototype.pause = function() {
+    return this.mpdPlugin.pause();
+};
+
+ControllerGPM.prototype.resume = function() {
+    return this.mpdPlugin.resume();
+};
+
+ControllerGPM.prototype.getTracklist = function() {
+    var tracklist =  this.mpdPlugin.getTracklist();
+    self.commandRouter.pushConsoleMessage('[gpm] tracklist: ' + tracklist);
+    return tracklist;
+};
+
+ControllerGPM.prototype.getState = function() {
+    return this.mpdPlugin.getState();
+};
+
+ControllerGPM.prototype.pushState = function(state) {
+    var self = this;
+    self.commandRouter.pushConsoleMessage('[gpm] pushState(): ' + state);
+    self.commandRouter.servicePushState(state, self.servicename);
+};
+
+ControllerGPM.prototype.listPlaylists = function() {
+    var self = this;
+
+    var defer = libQ.defer();
+
+    this.gpmApi.getAllPlaylists()
+        .then(function(playlists) {
+            var listItems = [];
+
+            console.log(playlists);
+
+            for (var i in playlists) {
+                listItems.push({
+                    service: self.servicename,
+                    type: 'folder',
+                    title: playlists[i].title,
+                    icon: 'fa fa-list-ol',
+                    uri: 'gpm/playlists/' + playlists[i].file
+                });
+            }
+
+            var response = {
+                navigation: {
+                    "prev": {
+                        uri: "gpm"
+                    },
+                    "lists": [
+                        {
+                            "availableListViews": [
+                                "list"
+                            ],
+                            "items": listItems
+                        }
+                    ]
+
+                }
+            };
+
+            defer.resolve(response);
+        })
+        .fail(function() {
+            defer.fail(new Error("Error loading playlists"));
+        });
+
+    return defer.promise;
+};
+
+module.exports = ControllerGPM;
