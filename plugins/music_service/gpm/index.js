@@ -208,6 +208,11 @@ ControllerGPM.prototype.explodeUri = function(uri) {
     var defer = libQ.defer();
 
     var response;
+    if (uri.startsWith('gpm/song/')) {
+        var id = uri.split('/')[2];
+        response = self.getTrack(id);
+        defer.resolve(response);
+    }
 
     return defer.promise;
 };
@@ -377,6 +382,34 @@ ControllerGPM.prototype.listPlaylist = function(uri) {
         })
         .fail(function() {
             defer.fail(new Error("Error loading song"));
+        });
+
+    return defer.promise;
+};
+
+ControllerGPM.prototype.getTrack = function(id) {
+    var self = this;
+
+    var defer = libQ.defer();
+
+    this.gpmApi.getSong(id)
+        .then(function(song) {
+            // FIXME there's no way to get song information or uri from GMusicProxy by track id... :(
+            defer.resolve([
+                {
+                    uri: 'http://10.5.102.23:9999/get_song?id=Tnhlewryt4ts77aszka7winnu74',
+                    service: self.servicename,
+                    artist: 'artist',
+                    album: 'album',
+                    type: 'song',
+                    duration: 125,
+                    tracknumber: 1,
+                    // albumart: albumart,
+                    // samplerate: self.samplerate,
+                    // bitdepth: '16 bit',
+                    trackType: 'gpm'
+                }
+            ]);
         });
 
     return defer.promise;

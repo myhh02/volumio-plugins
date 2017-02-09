@@ -91,6 +91,7 @@ GMusicProxyAPI.prototype.getAlbum = function(id) {
 
 GMusicProxyAPI.prototype.getSong = function(id) {
     var url = this.baseUrl + '/get_song?id=' + encodeURIComponent(id);
+    return this.request(url);
 };
 
 GMusicProxyAPI.prototype.getTopTracksArtis = function(id, type, num_tracks) {
@@ -130,8 +131,8 @@ GMusicProxyAPI.prototype.parse = function(data) {
     }
     return playlists;
 };
-//
-// new GMusicProxyAPI().getPlaylist('7913b436-a176-4ac5-ac26-0d01253ac6e7')
+
+// new GMusicProxyAPI().getSong('Tpf2xaiwy44kg4zdqi4fc34u2ne')
 //     .then(function(res) {
 //         console.log(res);
 //     })
