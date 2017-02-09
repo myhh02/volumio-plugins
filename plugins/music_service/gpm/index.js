@@ -30,8 +30,6 @@ ControllerGPM.prototype.onVolumioStart = function() {
 ControllerGPM.prototype.onStart = function() {
     var self = this;
 
-    self.commandRouter.pushConsoleMessage('onStart');
-
     var defer = libQ.defer();
 
     self.startGMusicProxyDaemon()
@@ -47,9 +45,14 @@ ControllerGPM.prototype.onStart = function() {
 ControllerGPM.prototype.onStop = function() {
     var self = this;
 
-    self.commandRouter.pushConsoleMessage('onStop');
+    var defer = libQ.defer();
 
-    return libQ.resolve();
+    self.stopGMusicProxyDaemon()
+        .then(function() {
+            defer.resolve();
+        });
+
+    return defer.promise;
 };
 
 ControllerGPM.prototype.getConfigurationFiles = function() {
