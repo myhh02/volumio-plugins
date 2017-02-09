@@ -14,8 +14,9 @@
     "plugin_type": "music_service"
   },
   "dependencies": {
-    "kew": "^0.7.0",
     "fs-extra": "^0.28.0",
+    "kew": "^0.7.0",
+    "playlist-parser": "0.0.12",
     "v-conf": "^0.10.0"
   }
 }
