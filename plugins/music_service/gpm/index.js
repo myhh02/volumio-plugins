@@ -33,6 +33,7 @@ ControllerGPM.prototype.onStart = function() {
     var defer = libQ.defer();
 
     self.startGMusicProxyDaemon()
+        .then(self.addToBrowseSources.bind(self))
         .fail(function(e) {
             defer.reject(new Error(e));
         });
@@ -64,7 +65,7 @@ ControllerGPM.prototype.getUIConfig = function() {
 
     var defer = libQ.defer();
 
-    var lang_code = this.commandRouter.sharedVars.get('language_code');
+    var lang_code = self.commandRouter.sharedVars.get('language_code');
     self.commandRouter.pushConsoleMessage('Got language code: ' + lang_code);
 
     self.commandRouter.i18nJson(__dirname + '/i18n/strings_' + lang_code + '.json',
@@ -130,18 +131,24 @@ ControllerGPM.prototype.rebuildGMusicProxyAndRestartDaemon = function() {
 
     self.createGmusicproxyFile()
         .then(self.stopGMusicProxyDaemon.bind(self))
-        .then(self.startGMusicProxyDaemon.bind(self));
+        .then(self.startGMusicProxyDaemon.bind(self))
+        .then(self.addToBrowseSources.bind(self));
 
     return defer.promise;
 };
 
 ControllerGPM.prototype.addToBrowseSources = function() {
+    var defer = libQ.defer();
+
     this.commandRouter.volumioAddToBrowseSources({
         name: "Google Play Music",
         uri: "gpm",
         plugin_type: "music_service",
         plugin_name: "gpm"
     });
+
+    defer.resolve();
+    return defer.promise;
 };
 
 ControllerGPM.prototype.handleBrowseUri = function(uri) {
