@@ -121,7 +121,8 @@ ControllerGPM.prototype.saveAccount = function(data) {
 
     var defer = libQ.defer();
 
-    //TODO set config
+    self.config.set('username', data['username']);
+    self.config.set('password', data['password']);
 
     return defer.promise;
 };

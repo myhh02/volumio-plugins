@@ -15,7 +15,10 @@
       },
       "saveButton": {
         "label": "TRANSLATE.GPM_SAVE",
-        "data": []
+        "data": [
+          "username",
+          "password"
+        ]
       },
       "content": [
         {
