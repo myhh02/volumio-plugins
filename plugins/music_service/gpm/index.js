@@ -31,6 +31,8 @@ ControllerGPM.prototype.onStart = function() {
 
     var defer = libQ.defer();
 
+    this.mpdPlugin = this.commandRouter.pluginManager.getPlugin('music_service', 'mpd');
+
     self.startGMusicProxyDaemon()
         .then(self.addToBrowseSources.bind(self))
         .fail(function(e) {
