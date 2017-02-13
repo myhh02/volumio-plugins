@@ -17,6 +17,7 @@
     "fs-extra": "^0.28.0",
     "kew": "^0.7.0",
     "playlist-parser": "0.0.12",
+    "playmusic": "^2.2.1",
     "v-conf": "^0.10.0"
   }
 }

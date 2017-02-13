@@ -5,6 +5,7 @@ var fs = require('fs-extra');
 var config = new (require('v-conf'))();
 var exec = require('child_process').exec;
 var GMusicProxyAPI = require('./gmusicproxy-api');
+var PlayMusic = require('playmusic');
 
 function ControllerGPM(context) {
     var self = this;
@@ -15,6 +16,7 @@ function ControllerGPM(context) {
     this.configManager = this.context.configManager;
     this.servicename = 'gpm';
     this.gpmApi = new GMusicProxyAPI();
+    this.pm = new PlayMusic();
 }
 
 ControllerGPM.prototype.onVolumioStart = function() {
@@ -104,7 +106,19 @@ ControllerGPM.prototype.startGMusicProxyDaemon = function() {
             defer.reject();
         } else {
             self.commandRouter.pushConsoleMessage('--- Started GMusicProxy daemon:' + stdout);
-            defer.resolve();
+
+            self.pm.init({
+                email: self.config.get('username'),
+                password: self.config.get('password')
+            }, function (err) {
+                if (err) {
+                    self.commandRouter.pushConsoleMessage('Error while initializing Play Music: ' + err);
+                    defer.reject(err);
+                } else {
+                    self.commandRouter.pushConsoleMessage('--- Initialized Play Music');
+                    defer.resolve();
+                }
+            });
         }
     });
 
@@ -115,6 +129,8 @@ ControllerGPM.prototype.stopGMusicProxyDaemon = function() {
     var self = this;
 
     var defer = libQ.defer();
+
+    this.pm = new PlayMusic();
 
     exec('killall GMusicProxy', function(error, stdout, stderr) {
         self.commandRouter.pushConsoleMessage('--- Stopped GMusicProxy daemon\n' + (stdout ? stdout : stderr));
@@ -300,24 +316,28 @@ ControllerGPM.prototype.listPlaylists = function() {
 
     var defer = libQ.defer();
 
-    this.gpmApi.getAllPlaylists()
-        .then(function(playlists) {
+    this.pm.getPlayLists(function(err, playlists) {
+        if (err) {
+            defer.fail(err);
+        } else if (!playlists || playlists.length === 0 || playlists.data.items.length === 0) {
+            defer.fail(new Error('Error loading playlists'));
+        } else {
             var listItems = [];
 
-            for (var i in playlists) {
+            playlists.data.items.forEach(function (playlist) {
                 listItems.push({
-                    service: self.servicename,
+                    service: 'gpm',
                     type: 'folder',
-                    title: playlists[i].title,
+                    title: playlist.name,
                     icon: 'fa fa-list-ol',
-                    uri: 'gpm/playlists/' + playlists[i].file
+                    uri: 'gpm/playlists/' + playlist.id
                 });
-            }
+            });
 
             var response = {
                 navigation: {
                     "prev": {
-                        uri: "gpm"
+                        uri: 'gpm'
                     },
                     "lists": [
                         {
@@ -327,15 +347,11 @@ ControllerGPM.prototype.listPlaylists = function() {
                             "items": listItems
                         }
                     ]
-
                 }
             };
-
             defer.resolve(response);
-        })
-        .fail(function() {
-            defer.fail(new Error("Error loading playlists"));
-        });
+        }
+    });
 
     return defer.promise;
 };
@@ -392,25 +408,34 @@ ControllerGPM.prototype.getTrack = function(id) {
 
     var defer = libQ.defer();
 
-    this.gpmApi.getSong(id)
-        .then(function(song) {
-            // FIXME there's no way to get song information or uri from GMusicProxy by track id... :(
-            defer.resolve([
-                {
-                    uri: 'http://localhost:9999/get_song?id=Tnhlewryt4ts77aszka7winnu74',
-                    service: self.servicename,
-                    artist: 'artist',
-                    album: 'album',
-                    type: 'song',
-                    duration: 125,
-                    tracknumber: 1,
-                    // albumart: albumart,
-                    // samplerate: self.samplerate,
-                    // bitdepth: '16 bit',
-                    trackType: 'gpm'
+    this.pm.getAllAccessTrack(id, function (err, track) {
+        if (err || !track || track.length === 0) {
+            defer.fail(err);
+        } else if (!track || track.length === 0) {
+            defer.fail(new Error('Error loading song'));
+        } else {
+            self.pm.getStreamUrl(id, function (err, uri) {
+                if (err || !track || track.length === 0) {
+                    defer.fail(err);
+                } else {
+                    defer.resolve([{
+                        uri: uri,
+                        service: 'gpm',
+                        name: track.title,
+                        artist: track.artist,
+                        album: track.album,
+                        type: 'song',
+                        duration: parseInt(track.durationMillis / 1000),
+                        tracknumber: track.trackNumber,
+                        albumart: track.albumArtRef[0].url,
+                        samplerate: '320kbits',
+                        bitdepth: '16 bit',
+                        trackType: 'mpd'
+                    }]);
                 }
-            ]);
-        });
+            });
+        }
+    });
 
     return defer.promise;
 };
