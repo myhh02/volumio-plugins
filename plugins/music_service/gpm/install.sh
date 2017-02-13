@@ -2,11 +2,10 @@
 
 echo "Installing GMusicProxy dependencies..."
 sudo apt-get update
-sudo apt-get -y install build-essential unzip python2.7-dev libffi-dev libssl-dev --no-install-recommends
+sudo apt-get -y install build-essential unzip python2.7-dev libffi-dev libssl-dev python-setuptools --no-install-recommends
 
 # fix for incompatible pip and requests version, as the repository version is too old
 echo "Install current version of pip..."
-sudo apt-get remove python-pip
 sudo easy_install pip
 
 echo "Installing GMusicProxy..."
